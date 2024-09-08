@@ -2,6 +2,8 @@
   import Spinner from '$lib/Spinner.svelte';
   import Konva from 'konva';
   import * as pdfjs from 'pdfjs-dist';
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   import * as pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs';
   import { onDestroy, untrack } from 'svelte';
