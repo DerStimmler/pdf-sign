@@ -198,7 +198,7 @@
       <Card.Content>
         {#if !pdfFile}
           <div class="grid h-full place-items-center min-w-80">
-            <p>No PDF selected</p>
+            <p class="italic">No PDF selected</p>
           </div>
         {/if}
 
