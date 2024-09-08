@@ -8,7 +8,7 @@
   import type { FilterSettings } from './filter-settings';
   import Settings from './Settings.svelte';
   import { Stage, Layer, Transformer } from 'svelte-konva';
-  import * as Card from "$lib/components/ui/card";
+  import * as Card from '$lib/components/ui/card';
   import {
     applyFiltersToPdfImages,
     applyFiltersToSignatureImage,
@@ -20,7 +20,6 @@
     savePdfWithoutFilters
   } from './konva-service';
   import { downloadBlob } from '$lib';
-  import SignatureDialog from './SignatureDialog.svelte';
   import { Button } from '$lib/components/ui/button';
   pdfjs.GlobalWorkerOptions.workerSrc = import.meta.url + 'pdfjs-dist/build/pdf.worker.mjs';
 
@@ -39,8 +38,6 @@
   let signatureLayerConfig: Konva.LayerConfig = $state({});
 
   let pdfFile: File | null = $state(null);
-  let signatureFile: File | null = $state(null);
-
   let pdfImages: { image: Konva.Image; pageIndex: number }[] = $state([]);
   let pdfImagesWithFilter: { image: Konva.Image; pageIndex: number }[] = $state([]);
 
@@ -100,12 +97,6 @@
   });
 
   $effect(() => {
-    if(signatureFile){
-      signatureImageDataUrl = URL.createObjectURL(signatureFile);
-    }
-  });
-
-  $effect(() => {
     if (!signatureImageDataUrl) return;
 
     isRendering = true;
@@ -138,7 +129,7 @@
     }
   });
 
-  function copyImageDimensions(sourceImage: Konva.Image, targetImage: Konva.Image){
+  function copyImageDimensions(sourceImage: Konva.Image, targetImage: Konva.Image) {
     targetImage.position(sourceImage.position());
     targetImage.size(sourceImage.size());
     targetImage.rotation(sourceImage.rotation());
@@ -147,8 +138,8 @@
   }
 
   async function savePdf() {
-    if (!pdfFile || !signatureFile) {
-      alert('Please select both PDF and Signature files');
+    if (!pdfFile || !signatureImageDataUrl) {
+      alert('Please select both PDF and signature.');
       return;
     }
 
@@ -161,75 +152,70 @@
     }
   }
 
-  function closeSignatureDialog(dataUrl: string){
-    signatureImageDataUrl = dataUrl;
-  }
-
   onDestroy(() => {
     stage?.destroy();
   });
 </script>
 
-<!--<SignatureDialog close={closeSignatureDialog}></SignatureDialog>-->
-
-<div class="grid md:grid-cols-[max-content_1fr] gap-8">
+<div class="grid md:grid-cols-[max-content_1fr] gap-8 place-self-center">
   <div class="md:sticky h-max top-32 grid gap-8">
     <Card.Root>
       <Card.Header>
-        <Card.Title>
-          Configuration
-        </Card.Title>
+        <Card.Title>Configuration</Card.Title>
       </Card.Header>
       <Card.Content>
-      <Settings
-        changePdf={(file) => (pdfFile = file)}
-        changeSignature={(file) => (signatureFile = file)}
-        bind:filterSettings
-      ></Settings>
+        <Settings
+          changePdf={(file) => (pdfFile = file)}
+          changeSignature={(dataUrl) => (signatureImageDataUrl = dataUrl)}
+          bind:filterSettings
+        ></Settings>
       </Card.Content>
       <Card.Footer>
         <Button onclick={savePdf}>Sign PDF</Button>
       </Card.Footer>
     </Card.Root>
-    <div>
-      <ol class="list-decimal list-inside">
-    <li>Select your PDF</li>
-    <li>Select your Signature</li>
-    <li>Position your Signature as you like</li>
-    <li>Optional: emulate printing and scanning</li>
-    <li>Sign PDF</li>
-    </ol>
-    </div>
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>Instruction</Card.Title>
+      </Card.Header>
+      <Card.Content>
+        <ol class="list-decimal list-inside text-opacity-70">
+          <li>Select your PDF</li>
+          <li>Select your signature</li>
+          <li>Position your signature as you like</li>
+          <li>Optional: emulate printing and scanning</li>
+          <li>Sign and download PDF</li>
+        </ol>
+      </Card.Content>
+    </Card.Root>
   </div>
 
   <div class="w-fit flex min-w-24">
     <Card.Root>
       <Card.Header>
-        <Card.Title>
-          Preview
-        </Card.Title>
+        <Card.Title>Preview</Card.Title>
       </Card.Header>
       <Card.Content>
-      {#if !pdfFile}
-        <div class="grid h-full place-items-center min-w-80">
-          <p>No PDF selected</p>
-        </div>
-      {/if}
+        {#if !pdfFile}
+          <div class="grid h-full place-items-center min-w-80">
+            <p>No PDF selected</p>
+          </div>
+        {/if}
 
-      {#if isRendering}
-        <div class="grid h-full min-w-24 place-items-center">
-          <Spinner></Spinner>
-        </div>
-      {/if}
+        {#if isRendering}
+          <div class="grid h-full min-w-24 place-items-center">
+            <Spinner></Spinner>
+          </div>
+        {/if}
 
-      <div class:invisible={isRendering || !pdfFile}>
-        <Stage bind:handle={stage} bind:config={stageConfig}>
-          <Layer bind:handle={pdfLayer} bind:config={pdfLayerConfig}></Layer>
-          <Layer bind:handle={signatureLayer} bind:config={signatureLayerConfig}>
-            <Transformer bind:handle={signatureTransformer} bind:config={signatureTransformerConfig}></Transformer>
-          </Layer>
-        </Stage>
-      </div>
+        <div class:invisible={isRendering || !pdfFile}>
+          <Stage bind:handle={stage} bind:config={stageConfig}>
+            <Layer bind:handle={pdfLayer} bind:config={pdfLayerConfig}></Layer>
+            <Layer bind:handle={signatureLayer} bind:config={signatureLayerConfig}>
+              <Transformer bind:handle={signatureTransformer} bind:config={signatureTransformerConfig}></Transformer>
+            </Layer>
+          </Stage>
+        </div>
       </Card.Content>
     </Card.Root>
   </div>

@@ -86,8 +86,7 @@ export async function generateSignatureImage(dataUrl: string): Promise<Konva.Ima
     img.onload = () => {
       const konvaImage = new Konva.Image({
         image: img,
-        draggable: true,
-        fill: 'rgba(255,255,255,0.5)'
+        draggable: true
       });
       resolve(konvaImage);
     };
