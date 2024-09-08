@@ -39,9 +39,13 @@
   },
   "type": "module",
   "dependencies": {
+    "bits-ui": "^0.21.13",
+    "clsx": "^2.1.1",
     "konva": "^9.3.14",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.6.82",
-    "svelte-konva": "^0.3.1"
+    "svelte-konva": "^0.3.1",
+    "tailwind-merge": "^2.5.2",
+    "tailwind-variants": "^0.2.1"
   }
 }
