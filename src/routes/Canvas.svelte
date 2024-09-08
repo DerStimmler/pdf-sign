@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Card from '$lib/Card.svelte';
   import Spinner from '$lib/Spinner.svelte';
   import Konva from 'konva';
   import * as pdfjs from 'pdfjs-dist';
@@ -9,6 +8,7 @@
   import type { FilterSettings } from './filter-settings';
   import Settings from './Settings.svelte';
   import { Stage, Layer, Transformer } from 'svelte-konva';
+  import * as Card from "$lib/components/ui/card";
   import {
     applyFiltersToPdfImages,
     applyFiltersToSignatureImage,
@@ -21,6 +21,7 @@
   } from './konva-service';
   import { downloadBlob } from '$lib';
   import SignatureDialog from './SignatureDialog.svelte';
+  import { Button } from '$lib/components/ui/button';
   pdfjs.GlobalWorkerOptions.workerSrc = import.meta.url + 'pdfjs-dist/build/pdf.worker.mjs';
 
   let isRendering = $state(false);
@@ -173,14 +174,23 @@
 
 <div class="grid md:grid-cols-[max-content_1fr] gap-8">
   <div class="md:sticky h-max top-32 grid gap-8">
-    <Card>
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>
+          Configuration
+        </Card.Title>
+      </Card.Header>
+      <Card.Content>
       <Settings
         changePdf={(file) => (pdfFile = file)}
         changeSignature={(file) => (signatureFile = file)}
         bind:filterSettings
-        {savePdf}
       ></Settings>
-    </Card>
+      </Card.Content>
+      <Card.Footer>
+        <Button onclick={savePdf}>Sign PDF</Button>
+      </Card.Footer>
+    </Card.Root>
     <div>
       <ol class="list-decimal list-inside">
     <li>Select your PDF</li>
@@ -193,7 +203,13 @@
   </div>
 
   <div class="w-fit flex min-w-24">
-    <Card>
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>
+          Preview
+        </Card.Title>
+      </Card.Header>
+      <Card.Content>
       {#if !pdfFile}
         <div class="grid h-full place-items-center min-w-80">
           <p>No PDF selected</p>
@@ -214,6 +230,7 @@
           </Layer>
         </Stage>
       </div>
-    </Card>
+      </Card.Content>
+    </Card.Root>
   </div>
 </div>

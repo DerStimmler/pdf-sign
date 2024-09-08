@@ -1,14 +1,16 @@
 <script lang="ts">
   import type { FilterSettings } from './filter-settings';
+  import { Checkbox } from "$lib/components/ui/checkbox";
+  import { Label } from '$lib/components/ui/label';
+  import { Input } from '$lib/components/ui/input';
 
   type SettingsProps = {
     filterSettings: FilterSettings;
-    savePdf: () => void;
     changePdf: (file: File) => void;
     changeSignature: (file: File) => void;
   };
 
-  let { savePdf, changePdf, changeSignature, filterSettings = $bindable() }: SettingsProps = $props();
+  let { changePdf, changeSignature, filterSettings = $bindable() }: SettingsProps = $props();
 
   async function handlePdfChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -31,21 +33,22 @@
   }
 </script>
 
-<div class="grid gap-2">
-  <div class="grid gap-1">
-    <div class="font-bold text-sm opacity-80">PDF</div>
-    <input type="file" accept=".pdf" onchange={handlePdfChange} />
+<div class="grid gap-4">
+  <div class="grid w-full max-w-sm items-center gap-1.5">
+    <Label for="pdf">PDF</Label>
+    <Input id="pdf" type="file" accept=".pdf" onchange={handlePdfChange} />
   </div>
-  <div class="grid gap-1">
-    <div class="font-bold text-sm opacity-80">Signature</div>
-    <input type="file" accept="image/*" onchange={handleSignatureChange} />
+  <div class="grid w-full max-w-sm items-center gap-1.5">
+    <Label for="picture">Signature</Label>
+    <Input id="picture" type="file" accept="image/*" onchange={handleSignatureChange} />
   </div>
-  <div class="grid gap-1">
-    <div class="font-bold text-sm opacity-80">Apply scan emulation filter</div>
-    <input class="place-self-start" type="checkbox" bind:checked={filterSettings.applyFilter} />
+    <div class="items-top flex space-x-2">
+      <Checkbox bind:checked={filterSettings.applyFilter} id="filter" />
+      <div class="grid gap-1.5 leading-none">
+        <Label for="filter" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Emulate scanner</Label>
+        <p class="text-muted-foreground text-sm">
+          Apply filters to emulate the effect of printing and scanning
+        </p>
+    </div>
   </div>
-  <button
-    class="bg-indigo-500 hover:bg-indigo-600 transition-colors duration-300 font-bold py-2 px-4 rounded"
-    onclick={savePdf}>Sign PDF</button
-  >
 </div>

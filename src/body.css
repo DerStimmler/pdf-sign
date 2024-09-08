@@ -4,9 +4,8 @@
 
 html,
 body {
-  background-image: radial-gradient(circle, #1d1d1d 0%, var(--bg-color) 40%);
+  @apply bg-[radial-gradient(circle,hsl(var(--foreground)/0.025)_0%,hsl(var(--background))_40%)];
   background-attachment: fixed;
-
   margin: 0;
 }
 
