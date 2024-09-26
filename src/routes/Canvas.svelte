@@ -23,6 +23,9 @@
   } from './konva-service';
   import { downloadBlob } from '$lib';
   import { Button } from '$lib/components/ui/button';
+  import type { Point } from '$lib/point';
+  import { getDistance } from '$lib/get-distance';
+  import { getCenter } from '$lib/get-center';
   pdfjs.GlobalWorkerOptions.workerSrc = import.meta.url + 'pdfjs-dist/build/pdf.worker.mjs';
 
   let isRendering = $state(false);
@@ -32,6 +35,7 @@
     width: 0,
     height: 0
   });
+  let stageContainer: HTMLDivElement;
 
   let pdfLayer: Konva.Layer | undefined = $state(undefined);
   let pdfLayerConfig: Konva.LayerConfig = $state({ listening: false });
@@ -64,6 +68,8 @@
     rotationSnaps: [0, 45, 90, 135, 180, 225, 270, 315]
   });
 
+  let signatureLastDistance = $state(0);
+
   let filterSettings: FilterSettings = $state({
     applyFilter: false,
     contrast: 50,
@@ -71,6 +77,47 @@
     noise: 0.1,
     brightness: -0.1,
     rotation: 0
+  });
+
+  function stageTouchMove(event: TouchEvent) {
+    if (!signatureImage || !signatureLayer) return;
+
+    const touches = event.touches;
+
+    if (touches.length < 2) {
+      return;
+    }
+
+    let touch1 = event.touches[0];
+    let touch2 = event.touches[1];
+
+    const p1 = {
+      x: touch1.clientX,
+      y: touch1.clientY
+    };
+    const p2 = {
+      x: touch2.clientX,
+      y: touch2.clientY
+    };
+
+    if (!signatureLastDistance) {
+      return;
+    }
+    const newDist = getDistance(p1, p2);
+    const scaleFactor = newDist / signatureLastDistance;
+    const newScale = signatureImage.scaleX() * scaleFactor;
+    signatureImage.scaleX(newScale);
+    signatureImage.scaleY(newScale);
+    signatureLastDistance = newDist;
+    signatureLayer.batchDraw();
+  }
+
+  function stageTouchEnd() {
+    signatureLastDistance = 0;
+  }
+
+  $effect(() => {
+    Konva.hitOnDragEnabled = true;
   });
 
   $effect(() => {
@@ -126,7 +173,30 @@
         if (signatureImage && signatureImageWithFilter) {
           copyImageDimensions(signatureImageWithFilter, signatureImage);
         }
-        renderSignatureImage(signatureImage!, signatureLayer!, signatureTransformer!).then(() => (isRendering = false));
+        renderSignatureImage(signatureImage!, signatureLayer!, signatureTransformer!).then(() => {
+          signatureImage!.on('touchstart', (e) => {
+            const touches = e.evt.touches;
+            if (touches.length < 2) {
+              return;
+            }
+
+            let touch1 = touches[0];
+            let touch2 = touches[1];
+
+            const p1 = {
+              x: touch1.clientX,
+              y: touch1.clientY
+            };
+
+            const p2 = {
+              x: touch2.clientX,
+              y: touch2.clientY
+            };
+
+            signatureLastDistance = getDistance(p1, p2);
+          });
+          isRendering = false;
+        });
       });
     }
   });
@@ -159,7 +229,7 @@
   });
 </script>
 
-<div class="grid md:grid-cols-[max-content_1fr] gap-8 place-self-center">
+<div class="grid md:grid-cols-2 gap-8 place-self-center">
   <div class="md:sticky h-max top-32 grid gap-8">
     <Card.Root>
       <Card.Header>
@@ -178,7 +248,7 @@
     </Card.Root>
     <Card.Root>
       <Card.Header>
-        <Card.Title>Instruction</Card.Title>
+        <Card.Title>Instructions</Card.Title>
       </Card.Header>
       <Card.Content>
         <ol class="list-decimal list-inside text-opacity-70">
@@ -192,7 +262,7 @@
     </Card.Root>
   </div>
 
-  <div class="w-fit flex min-w-24">
+  <div class="grid">
     <Card.Root>
       <Card.Header>
         <Card.Title>Preview</Card.Title>
@@ -210,8 +280,8 @@
           </div>
         {/if}
 
-        <div class:invisible={isRendering || !pdfFile}>
-          <Stage bind:handle={stage} bind:config={stageConfig}>
+        <div class:invisible={isRendering || !pdfFile} bind:this={stageContainer}>
+          <Stage bind:handle={stage} bind:config={stageConfig} ontouchmove={stageTouchMove} ontouchend={stageTouchEnd}>
             <Layer bind:handle={pdfLayer} bind:config={pdfLayerConfig}></Layer>
             <Layer bind:handle={signatureLayer} bind:config={signatureLayerConfig}>
               <Transformer bind:handle={signatureTransformer} bind:config={signatureTransformerConfig}></Transformer>

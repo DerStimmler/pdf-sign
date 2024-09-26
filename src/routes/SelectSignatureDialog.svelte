@@ -24,7 +24,6 @@
   }
 
   function handleDrawing(dataUrl: string) {
-    console.log(dataUrl);
     signatureDataUrl = dataUrl;
   }
 

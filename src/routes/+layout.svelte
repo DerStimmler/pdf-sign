@@ -5,7 +5,7 @@
   import ModeToggle from '$lib/components/ui/mode-toggle/ModeToggle.svelte';
 </script>
 
-<div class="fixed top-8 right-8">
+<div class="absolute top-8 right-8">
   <ModeToggle></ModeToggle>
 </div>
 

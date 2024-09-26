@@ -22,21 +22,37 @@
   });
   let isDrawing = $state(false);
 
-  function startDrawing(event: MouseEvent) {
+  function getOffset(event: MouseEvent | TouchEvent) {
+    if (event instanceof MouseEvent) {
+      const { offsetX, offsetY } = event;
+      return { offsetX, offsetY };
+    } else if (event instanceof TouchEvent) {
+      const touch = event.touches[0] || event.changedTouches[0];
+      const rect = canvas!.getBoundingClientRect();
+      return {
+        offsetX: touch.clientX - rect.left,
+        offsetY: touch.clientY - rect.top
+      };
+    }
+    return { offsetX: 0, offsetY: 0 };
+  }
+
+  function startDrawing(event: MouseEvent | TouchEvent) {
     isDrawing = true;
-    const { offsetX, offsetY } = event;
+    const { offsetX, offsetY } = getOffset(event);
     ctx.beginPath();
     ctx.moveTo(offsetX, offsetY);
   }
 
-  function draw(event: MouseEvent) {
+  function draw(event: MouseEvent | TouchEvent) {
     if (!isDrawing) return;
-    const { offsetX, offsetY } = event;
+    const { offsetX, offsetY } = getOffset(event);
     ctx.lineTo(offsetX, offsetY);
     ctx.stroke();
   }
 
-  function stopDrawing() {
+  function stopDrawing(event: MouseEvent | TouchEvent) {
+    event.preventDefault(); // Prevents scrolling on touch devices
     isDrawing = false;
     close(canvas!.toDataURL()!);
   }
@@ -57,6 +73,9 @@
     onmousemove={draw}
     onmouseup={stopDrawing}
     onmouseleave={stopDrawing}
+    ontouchstart={startDrawing}
+    ontouchmove={draw}
+    ontouchend={stopDrawing}
   >
   </canvas>
   <Button onclick={reset} variant="ghost">Reset</Button>
