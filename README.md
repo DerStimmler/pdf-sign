@@ -2,7 +2,7 @@
 
 Easily sign your PDFs locally in your browser for maximum privacy
 
-## Instruction
+## Instructions
 
 Access the site [here](https://derstimmler.github.io/pdf-sign).
 
