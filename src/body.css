@@ -10,6 +10,7 @@ body {
 }
 
 body {
+  display: grid;
   min-height: 100dvh;
   position: relative;
   z-index: 0;

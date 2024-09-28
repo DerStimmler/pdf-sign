@@ -17,8 +17,6 @@
   let windowWidth = $state(0);
   let isDesktop = $derived(windowWidth > 768);
 
-  $inspect(isDesktop);
-
   function handleFileSelection(event: Event) {
     const target = event.target as HTMLInputElement;
     const files = target.files as FileList;
