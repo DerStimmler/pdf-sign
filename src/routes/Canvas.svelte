@@ -23,9 +23,7 @@
   } from './konva-service';
   import { downloadBlob } from '$lib';
   import { Button } from '$lib/components/ui/button';
-  import type { Point } from '$lib/point';
   import { getDistance } from '$lib/get-distance';
-  import { getCenter } from '$lib/get-center';
   pdfjs.GlobalWorkerOptions.workerSrc = import.meta.url + 'pdfjs-dist/build/pdf.worker.mjs';
 
   let isRendering = $state(false);
