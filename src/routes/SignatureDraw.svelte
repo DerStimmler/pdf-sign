@@ -7,6 +7,7 @@
 
   let { close }: SignatureDialogProps = $props();
 
+  let canvasContainerWidth = $state(0);
   let canvas: HTMLCanvasElement | undefined = $state();
   let ctx = $derived.by(() => {
     if (!canvas) return new CanvasRenderingContext2D();
@@ -21,6 +22,12 @@
     return ctx;
   });
   let isDrawing = $state(false);
+
+  $effect(() => {
+    if (!canvas) return;
+
+    if (canvas.width === 0) canvas.width = canvasContainerWidth;
+  });
 
   function getOffset(event: MouseEvent | TouchEvent) {
     if (event instanceof MouseEvent) {
@@ -52,7 +59,7 @@
   }
 
   function stopDrawing(event: MouseEvent | TouchEvent) {
-    event.preventDefault(); // Prevents scrolling on touch devices
+    if (event.cancelable) event.preventDefault();
     isDrawing = false;
     close(canvas!.toDataURL()!);
   }
@@ -64,19 +71,21 @@
 
 <div class="grid gap-2">
   <p class="text-sm">Draw your signature in the following field:</p>
-  <canvas
-    bind:this={canvas}
-    width="500"
-    height="200"
-    class="bg-white border-border border rounded-md"
-    onmousedown={startDrawing}
-    onmousemove={draw}
-    onmouseup={stopDrawing}
-    onmouseleave={stopDrawing}
-    ontouchstart={startDrawing}
-    ontouchmove={draw}
-    ontouchend={stopDrawing}
-  >
-  </canvas>
+  <div bind:clientWidth={canvasContainerWidth}>
+    <canvas
+      bind:this={canvas}
+      width="0"
+      height="150"
+      class="bg-white border-border border rounded-md"
+      onmousedown={startDrawing}
+      onmousemove={draw}
+      onmouseup={stopDrawing}
+      onmouseleave={stopDrawing}
+      ontouchstart={startDrawing}
+      ontouchmove={draw}
+      ontouchend={stopDrawing}
+    >
+    </canvas>
+  </div>
   <Button onclick={reset} variant="ghost">Reset</Button>
 </div>

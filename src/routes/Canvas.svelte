@@ -24,6 +24,8 @@
   import { downloadBlob } from '$lib';
   import { Button } from '$lib/components/ui/button';
   import { getDistance } from '$lib/get-distance';
+  import { getAngle } from '$lib/get-angle';
+  import { getCenter } from '$lib/get-center';
   pdfjs.GlobalWorkerOptions.workerSrc = import.meta.url + 'pdfjs-dist/build/pdf.worker.mjs';
 
   let isRendering = $state(false);
@@ -33,7 +35,6 @@
     width: 0,
     height: 0
   });
-  let stageContainer: HTMLDivElement;
 
   let pdfLayer: Konva.Layer | undefined = $state(undefined);
   let pdfLayerConfig: Konva.LayerConfig = $state({ listening: false });
@@ -66,8 +67,6 @@
     rotationSnaps: [0, 45, 90, 135, 180, 225, 270, 315]
   });
 
-  let signatureLastDistance = $state(0);
-
   let filterSettings: FilterSettings = $state({
     applyFilter: false,
     contrast: 50,
@@ -76,43 +75,6 @@
     brightness: -0.1,
     rotation: 0
   });
-
-  function stageTouchMove(event: TouchEvent) {
-    if (!signatureImage || !signatureLayer) return;
-
-    const touches = event.touches;
-
-    if (touches.length < 2) {
-      return;
-    }
-
-    let touch1 = event.touches[0];
-    let touch2 = event.touches[1];
-
-    const p1 = {
-      x: touch1.clientX,
-      y: touch1.clientY
-    };
-    const p2 = {
-      x: touch2.clientX,
-      y: touch2.clientY
-    };
-
-    if (!signatureLastDistance) {
-      return;
-    }
-    const newDist = getDistance(p1, p2);
-    const scaleFactor = newDist / signatureLastDistance;
-    const newScale = signatureImage.scaleX() * scaleFactor;
-    signatureImage.scaleX(newScale);
-    signatureImage.scaleY(newScale);
-    signatureLastDistance = newDist;
-    signatureLayer.batchDraw();
-  }
-
-  function stageTouchEnd() {
-    signatureLastDistance = 0;
-  }
 
   $effect(() => {
     Konva.hitOnDragEnabled = true;
@@ -151,6 +113,125 @@
     generateSignatureImage(signatureImageDataUrl).then((image) => (signatureImage = image));
   });
 
+  function addMultiTouchSupport(image: Konva.Image) {
+    let initialDistance = 0;
+    let initialAngle = 0;
+    let initialScale = 1;
+    let initialRotation = 0;
+    let initialMidpoint = { x: 0, y: 0 };
+    let initialPosition = { x: 0, y: 0 };
+
+    // Set the offset to the center of the image to rotate around center
+    image.offsetX(image.width() / 2);
+    image.offsetY(image.height() / 2);
+
+    image.on('touchstart', function (e) {
+      const touches = e.evt.touches;
+
+      // Single-finger drag (move the image)
+      if (touches.length === 1) {
+        const touch = touches[0];
+        initialPosition = { x: touch.clientX, y: touch.clientY };
+      }
+
+      // Multi-touch gesture (scale and rotate)
+      if (touches.length === 2) {
+        e.evt.preventDefault();
+
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+
+        const p1 = {
+          x: touch1.clientX,
+          y: touch1.clientY
+        };
+        const p2 = {
+          x: touch2.clientX,
+          y: touch2.clientY
+        };
+
+        initialDistance = getDistance(p1, p2);
+        initialAngle = getAngle(p1, p2);
+        initialScale = image.scaleX(); // assume uniform scaling (scaleX == scaleY)
+        initialRotation = image.rotation();
+        initialMidpoint = getCenter(p1, p2);
+        initialPosition = { x: image.x(), y: image.y() }; // store image's initial position
+      }
+    });
+
+    image.on('touchmove', function (e) {
+      const touches = e.evt.touches;
+
+      // Single-finger drag logic
+      if (touches.length === 1) {
+        const touch = touches[0];
+
+        // Calculate new position based on touch movement
+        const dx = touch.clientX - initialPosition.x;
+        const dy = touch.clientY - initialPosition.y;
+
+        image.x(image.x() + dx);
+        image.y(image.y() + dy);
+
+        // Update initial position to the current one
+        initialPosition = { x: touch.clientX, y: touch.clientY };
+
+        image.getLayer()?.batchDraw();
+      }
+
+      // Multi-touch gesture (scale and rotate)
+      if (touches.length === 2) {
+        e.evt.preventDefault();
+        const touch1 = touches[0];
+        const touch2 = touches[1];
+
+        const p1 = {
+          x: touch1.clientX,
+          y: touch1.clientY
+        };
+        const p2 = {
+          x: touch2.clientX,
+          y: touch2.clientY
+        };
+
+        const newDistance = getDistance(p1, p2);
+        const newAngle = getAngle(p1, p2);
+
+        // Calculate the new midpoint and move the image accordingly
+        const newMidpoint = getCenter(p1, p2);
+        const dx = newMidpoint.x - initialMidpoint.x;
+        const dy = newMidpoint.y - initialMidpoint.y;
+
+        image.x(initialPosition.x + dx);
+        image.y(initialPosition.y + dy);
+
+        // Calculate the scaling factor
+        const scaleFactor = newDistance / initialDistance;
+
+        // Apply scaling (around center)
+        image.scaleX(initialScale * scaleFactor);
+        image.scaleY(initialScale * scaleFactor);
+
+        // Calculate the new rotation angle
+        const angleDiff = (newAngle - initialAngle) * (180 / Math.PI); // convert to degrees
+        image.rotation(initialRotation + angleDiff);
+
+        image.getLayer()?.batchDraw();
+      }
+    });
+
+    image.on('touchend', function (e) {
+      const touches = e.evt.touches;
+
+      // Reset when no fingers are left
+      if (touches.length === 0) {
+        initialDistance = 0;
+        initialAngle = 0;
+        initialMidpoint = { x: 0, y: 0 };
+      }
+    });
+  }
+
   $effect(() => {
     if (!signatureImage || !signatureLayer) return;
 
@@ -172,27 +253,7 @@
           copyImageDimensions(signatureImageWithFilter, signatureImage);
         }
         renderSignatureImage(signatureImage!, signatureLayer!, signatureTransformer!).then(() => {
-          signatureImage!.on('touchstart', (e) => {
-            const touches = e.evt.touches;
-            if (touches.length < 2) {
-              return;
-            }
-
-            let touch1 = touches[0];
-            let touch2 = touches[1];
-
-            const p1 = {
-              x: touch1.clientX,
-              y: touch1.clientY
-            };
-
-            const p2 = {
-              x: touch2.clientX,
-              y: touch2.clientY
-            };
-
-            signatureLastDistance = getDistance(p1, p2);
-          });
+          addMultiTouchSupport(signatureImage!);
           isRendering = false;
         });
       });
@@ -278,8 +339,8 @@
           </div>
         {/if}
 
-        <div class:invisible={isRendering || !pdfFile} bind:this={stageContainer}>
-          <Stage bind:handle={stage} bind:config={stageConfig} ontouchmove={stageTouchMove} ontouchend={stageTouchEnd}>
+        <div class:invisible={isRendering || !pdfFile}>
+          <Stage bind:handle={stage} bind:config={stageConfig}>
             <Layer bind:handle={pdfLayer} bind:config={pdfLayerConfig}></Layer>
             <Layer bind:handle={signatureLayer} bind:config={signatureLayerConfig}>
               <Transformer bind:handle={signatureTransformer} bind:config={signatureTransformerConfig}></Transformer>
