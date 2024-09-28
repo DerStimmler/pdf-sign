@@ -120,8 +120,10 @@
     let initialRotation = 0;
     let initialMidpoint = { x: 0, y: 0 };
     let initialPosition = { x: 0, y: 0 };
+    let initialSkewX = 0;
+    let initialSkewY = 0;
 
-    // Set the offset to the center of the image to rotate around center
+    // Set the offset to the center of the image to rotate around the center
     image.offsetX(image.width() / 2);
     image.offsetY(image.height() / 2);
 
@@ -134,28 +136,26 @@
         initialPosition = { x: touch.clientX, y: touch.clientY };
       }
 
-      // Multi-touch gesture (scale and rotate)
+      // Multi-touch gesture (scale, rotate, skew)
       if (touches.length === 2) {
         e.evt.preventDefault();
 
         const touch1 = touches[0];
         const touch2 = touches[1];
 
-        const p1 = {
-          x: touch1.clientX,
-          y: touch1.clientY
-        };
-        const p2 = {
-          x: touch2.clientX,
-          y: touch2.clientY
-        };
+        const p1 = { x: touch1.clientX, y: touch1.clientY };
+        const p2 = { x: touch2.clientX, y: touch2.clientY };
 
         initialDistance = getDistance(p1, p2);
         initialAngle = getAngle(p1, p2);
-        initialScale = image.scaleX(); // assume uniform scaling (scaleX == scaleY)
+        initialScale = image.scaleX(); // Assume uniform scaling
         initialRotation = image.rotation();
         initialMidpoint = getCenter(p1, p2);
-        initialPosition = { x: image.x(), y: image.y() }; // store image's initial position
+        initialPosition = { x: image.x(), y: image.y() }; // Store image's initial position
+
+        // Store initial skew values
+        initialSkewX = image.skewX();
+        initialSkewY = image.skewY();
       }
     });
 
@@ -179,20 +179,14 @@
         image.getLayer()?.batchDraw();
       }
 
-      // Multi-touch gesture (scale and rotate)
+      // Multi-touch gesture (scale, rotate, skew)
       if (touches.length === 2) {
         e.evt.preventDefault();
         const touch1 = touches[0];
         const touch2 = touches[1];
 
-        const p1 = {
-          x: touch1.clientX,
-          y: touch1.clientY
-        };
-        const p2 = {
-          x: touch2.clientX,
-          y: touch2.clientY
-        };
+        const p1 = { x: touch1.clientX, y: touch1.clientY };
+        const p2 = { x: touch2.clientX, y: touch2.clientY };
 
         const newDistance = getDistance(p1, p2);
         const newAngle = getAngle(p1, p2);
@@ -213,8 +207,15 @@
         image.scaleY(initialScale * scaleFactor);
 
         // Calculate the new rotation angle
-        const angleDiff = (newAngle - initialAngle) * (180 / Math.PI); // convert to degrees
+        const angleDiff = (newAngle - initialAngle) * (180 / Math.PI); // Convert to degrees
         image.rotation(initialRotation + angleDiff);
+
+        // Calculate skew based on distance moved (optional logic)
+        const skewXChange = (newMidpoint.x - initialMidpoint.x) / 100; // Adjust the divisor for sensitivity
+        const skewYChange = (newMidpoint.y - initialMidpoint.y) / 100;
+
+        image.skewX(initialSkewX + skewXChange);
+        image.skewY(initialSkewY + skewYChange);
 
         image.getLayer()?.batchDraw();
       }

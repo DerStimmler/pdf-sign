@@ -44,22 +44,28 @@
     return { offsetX: 0, offsetY: 0 };
   }
 
-  function startDrawing(event: MouseEvent | TouchEvent) {
+  function startDrawing(event: PointerEvent) {
+    if (event.cancelable) event.preventDefault();
+
     isDrawing = true;
     const { offsetX, offsetY } = getOffset(event);
     ctx.beginPath();
     ctx.moveTo(offsetX, offsetY);
   }
 
-  function draw(event: MouseEvent | TouchEvent) {
+  function draw(event: PointerEvent) {
+    if (event.cancelable) event.preventDefault();
+
     if (!isDrawing) return;
+
     const { offsetX, offsetY } = getOffset(event);
     ctx.lineTo(offsetX, offsetY);
     ctx.stroke();
   }
 
-  function stopDrawing(event: MouseEvent | TouchEvent) {
+  function stopDrawing(event: PointerEvent) {
     if (event.cancelable) event.preventDefault();
+
     isDrawing = false;
     close(canvas!.toDataURL()!);
   }
@@ -76,14 +82,11 @@
       bind:this={canvas}
       width="0"
       height="150"
-      class="bg-white border-border border rounded-md"
-      onmousedown={startDrawing}
-      onmousemove={draw}
-      onmouseup={stopDrawing}
-      onmouseleave={stopDrawing}
-      ontouchstart={startDrawing}
-      ontouchmove={draw}
-      ontouchend={stopDrawing}
+      class="bg-white border-border border rounded-md touch-none"
+      onpointerdown={startDrawing}
+      onpointermove={draw}
+      onpointerup={stopDrawing}
+      onpointercancel={stopDrawing}
     >
     </canvas>
   </div>
